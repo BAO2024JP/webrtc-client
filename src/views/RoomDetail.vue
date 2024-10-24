@@ -37,7 +37,7 @@ async function handleMessages(e) {
       await startCall(msg.answer, msg.from)
       break
     case 'left':
-      endCall(msg.id)
+      endCall(msg.from)
       break
     case 'msg':
       await showMsg(msg.from, msg.msg)
@@ -139,7 +139,7 @@ onMounted(async () => {
   ws = new WebSocket(`${env.ws}/${roomId}`)
   ws.onmessage = handleMessages
   console.log(userId)
-  ws.onopen = () => wssend({ type: 'joined', id: userId })
+  ws.onopen = () => wssend({ type: 'joined', from: userId })
   await startLocalPlayback()
 })
 
@@ -164,11 +164,11 @@ const test = () => {
       <div class="text" v-html="msgContent"></div>
       <div class="video">
         <div class="video-box">
-          <h3>My Video</h3>
+          <h3>{{ userId.substring(0, 6) }}</h3>
           <video ref="localMedia" autoplay playsinline></video>
         </div>
         <div class="video-box" v-for="(stream, id) in remoteStreams" :key="id">
-          <h3>Remote Video: {{ id.substring(0, 6) }}</h3>
+          <h3>{{ id.substring(0, 6) }}</h3>
           <video
             :ref="`remoteMedia_${id}`"
             autoplay
