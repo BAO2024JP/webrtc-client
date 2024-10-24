@@ -6,7 +6,7 @@ const route = useRoute()
 const roomId = route.params.id
 
 const env = {
-  ws: 'ws://localhost:8787',
+  ws: 'ws://localhost:8787/',
   servers: { iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }] },
 }
 
@@ -26,6 +26,7 @@ async function handleMessages(e) {
   switch (msg.type) {
     case 'joined':
       await makeCall(msg.from)
+      showWelcome(msg.from)
       break
     case 'candidate':
       await acceptCandidate(msg.candidate, msg.from)
@@ -49,6 +50,10 @@ async function handleMessages(e) {
 
 const showMsg = (from, msg) => {
   msgContent.value += `<p><span>${from.substring(0, 6)}:</span>${msg}</p>`
+}
+
+const showWelcome = from => {
+  msgContent.value += `<p><span>${from === userId ? 'YOU' : from.substring(0, 6)}:</span>已进入房间</p>`
 }
 
 const wssend = data => {
@@ -103,6 +108,7 @@ async function acceptCandidate(c, participantId) {
 }
 
 async function answerCall(offer, participantId) {
+  console.log('offer', offer)
   await connectToPeer(participantId)
   await peerConnections[participantId].setRemoteDescription(offer)
   const answer = await peerConnections[participantId].createAnswer()
@@ -111,6 +117,7 @@ async function answerCall(offer, participantId) {
 }
 
 async function startCall(answer, participantId) {
+  console.log('answer', answer)
   await peerConnections[participantId].setRemoteDescription(answer)
 }
 
@@ -121,6 +128,7 @@ function endCall(participantId) {
     delete peerConnections[participantId]
     delete remoteStreams.value[participantId] // 移除对应的远程流
   }
+  msgContent.value += `<p><span>${participantId.substring(0, 6)}:</span>已离开房间</p>`
 }
 
 // web msg
@@ -136,10 +144,12 @@ const sendmsg = () => {
 
 onMounted(async () => {
   if (!roomId) return
-  ws = new WebSocket(`${env.ws}/${roomId}`)
+  ws = new WebSocket(`${env.ws}${roomId}`)
   ws.onmessage = handleMessages
-  console.log(userId)
-  ws.onopen = () => wssend({ type: 'joined', from: userId })
+  ws.onopen = () => {
+    wssend({ type: 'joined', from: userId })
+    showWelcome(userId)
+  }
   await startLocalPlayback()
 })
 
